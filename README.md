@@ -21,7 +21,7 @@ Sample Scene
 | Post Exposure 0 | Exposure 15 |
 | Tonemapping ACES | Tonemapping ACES |
 
-Classic Sponza
+Classic Sponza (https://github.com/Unity-Technologies/Classic-Sponza)
 ![image](https://github.com/8izips/LightPLU/blob/images/sponzaCompare.png)
 
 | URP(left) | HDRP(right) |
