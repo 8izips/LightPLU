@@ -1,6 +1,8 @@
 # LightPLU
  Light Intensity converter via PLU(Physical Light Units) for URP
 
+![image](https://github.com/8izips/LightPLU/blob/images/lightPLU_ui.png)
+
 ## How to Use
 1. Attach LightPLU Component to Light Object
 2. Adjust Light Intensity via component
