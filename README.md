@@ -11,14 +11,16 @@
 
 ![image](https://github.com/8izips/LightPLU/blob/images/sampleCompare.png)
 Sample Scene
+
 | HDRP(right) | Lux 120000 |
-||	6570 Kelvin|
-||	Exposure 15|
-||	Tonemapping ACES|
-|URP(left)| Intensity 1.05 |
-||	65700 Kelvin|
-||	Post Exposure 0|
-||	Tonemapping ACES|
+| | 6570 Kelvin |
+| | Exposure 15 |
+| | Tonemapping ACES |
+
+| URP(left)| Intensity 1.05 |
+| | 65700 Kelvin |
+| | Post Exposure 0 |
+| | Tonemapping ACES |
  
 Classic Sponza
 ![image](https://github.com/8izips/LightPLU/blob/images/sponzaCompare.png)
