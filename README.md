@@ -17,7 +17,7 @@ Sample Scene
 | URP(left) | HDRP(right) |
 | --- | --- |
 | Intensity 1.05 | Lux 120000 |
-| 65700 Kelvin | 6570 Kelvin |
+| 6570 Kelvin | 6570 Kelvin |
 | Post Exposure 0 | Exposure 15 |
 | Tonemapping ACES | Tonemapping ACES |
 
