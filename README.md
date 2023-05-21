@@ -18,7 +18,7 @@ Sample Scene
 | --- | --- |
 | Intensity 1.05 | Lux 120000 |
 | 6570 Kelvin | 6570 Kelvin |
-| Post Exposure 0 | Exposure 15 |
+| Post Exposure 0 | Exposure 15 (fixed) |
 | Tonemapping ACES | Tonemapping ACES |
 
 Classic Sponza (https://github.com/Unity-Technologies/Classic-Sponza)
@@ -28,7 +28,7 @@ Classic Sponza (https://github.com/Unity-Technologies/Classic-Sponza)
 | --- | --- |
 | Intensity 0.91875 | Lux 105000 |
 | 5500 Kelvin | 5500 Kelvin |
-| Post Exposure 3 | Exposure 12 |
+| Post Exposure 3 | Exposure 12 (fixed) |
 | Tonemapping ACES | Tonemapping ACES |
 
 lower left is default Sponza URP
