@@ -4,7 +4,7 @@ Date: 2026-09-05
 
 ## Outcome
 
-The play-mode validation harness was run in Unity 6 URP. The user reported that every PASS/FAIL validation stage passed after the exposure test was changed from a legacy `Graphics.Blit` path to a direct HDR fragment calculation.
+The play-mode validation harness was run in Unity 6 URP. Every numeric PASS/FAIL validation stage passed after the exposure test was changed from a legacy `Graphics.Blit` path to a direct HDR fragment calculation and the validation shaders were updated to the current URP cluster-light-loop API.
 
 - GPU float-HDR readback: **PASS**
 - Unity `LightUnitUtils` conversion checks: **PASS**
@@ -40,8 +40,29 @@ For the tested Unity 6 URP configuration:
 4. A reference pre-exposure model is numerically equivalent to applying the same EV exposure after physical scene luminance is produced.
 5. LightPLU can keep physical authoring values separate from the pre-exposed native value written to `Light.intensity`.
 
+## Production exposure implementation
+
+The repository now includes:
+
+- `PhysicalExposureVolume`: EV100 or Aperture/Shutter/ISO camera controls.
+- `PhysicalExposureRendererFeature`: a Unity 6 Render Graph pass injected at `BeforeRenderingPostProcessing`.
+- `Shaders/PhysicalExposure.shader`: multiplies scene-linear camera color by the relative physical exposure multiplier.
+
+The production pass uses the same validated equation:
+
+```text
+Light side:
+    2^-ReferenceEV100
+
+Camera side:
+    2^(ReferenceEV100 - CameraEV100 + Compensation)
+
+Combined:
+    2^(-CameraEV100 + Compensation)
+```
+
+The numeric math and pre-exposure formulation are covered by the validation harness. The Renderer Feature itself still needs an in-project integration check after it is added to the active Universal Renderer Data and a `LightPLU/Physical Exposure` Volume override is enabled.
+
 ## Important scope
 
 This does **not** claim that every URP BRDF, tonemapper or post-processing effect is identical to HDRP, Unreal Engine or Blender. The purpose of the harness is to isolate physical-unit transport and exposure math from renderer-specific artistic choices.
-
-The final production exposure renderer feature still needs to be implemented and validated in the intended URP injection point.
