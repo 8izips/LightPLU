@@ -37,7 +37,15 @@ This lets physically large light values remain in a practical HDR range while pr
 - Render Graph enabled (Unity 6 default)
 - Linear color space strongly recommended and required by the included validation harness
 
-The current production exposure Renderer Feature targets the Unity 6 Render Graph path. URP Compatibility Mode (Render Graph Disabled) is not currently supported by that feature.
+The production exposure Renderer Feature targets the Unity 6 Render Graph path. URP Compatibility Mode (Render Graph Disabled) is not currently supported by that feature.
+
+Auto Exposure additionally requires:
+
+- Compute shader support
+- Async GPU Readback support
+- A non-XR camera for the current lightweight metering implementation
+
+If Auto Exposure is requested but those requirements are unavailable, LightPLU falls back to the manual EV100/Physical Camera value.
 
 ## Light setup
 
@@ -66,19 +74,22 @@ Keep its injection point at:
 
 The feature uses `Shaders/PhysicalExposure.shader`. It normally resolves this shader automatically. The shader can also be assigned explicitly in the Renderer Feature inspector.
 
+The lightweight Auto Exposure meter is loaded automatically from:
+
+`Resources/LightPLUPhysicalExposureAuto.compute`
+
 ### 2. Add the Volume component
 
 Add a Global Volume (or use an existing Volume Profile), then add:
 
 `LightPLU > Physical Exposure`
 
-The component supports two modes.
-
-#### EV100
+### Manual EV100
 
 Set the camera exposure directly, for example:
 
 ```text
+Auto Exposure: Off
 Mode: EV100
 EV100: 15
 Reference EV100: 15
@@ -95,9 +106,9 @@ EV15 -> x1
 EV16 -> x0.5
 ```
 
-#### Physical Camera
+### Physical Camera
 
-Set:
+With Auto Exposure off, set:
 
 - Aperture (f-number)
 - Shutter Seconds
@@ -112,18 +123,52 @@ EV100 = log2((N^2 / t) * (100 / ISO))
 Example for 1/125 second:
 
 ```text
+Auto Exposure: Off
+Mode: Physical Camera
 Aperture: 16
 Shutter Seconds: 0.008
 ISO: 100
 ```
 
-`Exposure Compensation` is measured in stops. Positive values brighten the image.
+The manual EV/Physical Camera value is also used as the initial EV when Auto Exposure is switched on.
 
-### 3. Match Reference EV100
+## Auto Exposure
+
+Enable the `Auto Exposure` toggle in `LightPLU > Physical Exposure`.
+
+The current implementation is intentionally a lightweight mode comparable in purpose to Unreal's Auto Exposure Basic rather than a full histogram implementation. Every metering update samples a uniform 16 x 16 grid of the scene color, calculates log-average luminance on the GPU, and asynchronously returns one float. The camera then adapts in EV space.
+
+Controls:
+
+- `Min EV100`: darkest allowed camera EV limit
+- `Max EV100`: brightest-scene camera EV limit
+- `Middle Gray`: target display-linear gray; default `0.18`
+- `Speed Up`: stops/second when moving from a dark environment to a bright environment (EV increases)
+- `Speed Down`: stops/second when moving from a bright environment to a dark environment (EV decreases)
+- `Exposure Compensation`: artistic offset in stops after metering; positive values brighten the result
+
+The auto target is solved from the pre-exposed scene luminance. If `Lp` is the measured pre-exposed luminance and `R` is Reference EV100:
+
+```text
+physical log luminance = log2(Lp) + R
+
+target EV100 =
+    physical log luminance - log2(MiddleGray)
+```
+
+The result is clamped to `Min EV100` / `Max EV100` and followed using Speed Up / Speed Down.
+
+This design deliberately keeps the meter before the Physical Exposure pass, so it observes scene-linear color that has only received LightPLU's reference pre-exposure.
+
+### Current Auto Exposure scope
+
+The first implementation uses log-average Basic metering. It does not yet implement Unreal-style histogram percentiles, metering masks, compensation curves, or local exposure. Those can be layered on without changing the physical exposure model.
+
+## Match Reference EV100
 
 `Reference EV100` on the Physical Exposure Volume must match the value used by the LightPLU lights. The default is `15` on both sides.
 
-### 4. Avoid double exposure
+## Avoid double exposure
 
 If URP `Color Adjustments` is also enabled, keep its `Post Exposure` at `0` unless an additional artistic offset is intentional.
 
@@ -151,6 +196,8 @@ The current harness checks:
 - URP direct-diffuse normalization as an informational diagnostic
 
 The validation run used during the Unity 6 migration passed all numeric tests after the validation shaders were updated to the current URP cluster-light-loop API.
+
+The production Renderer Feature and new Auto Exposure meter should be integration-checked in the target project after adding the Renderer Feature and Volume override.
 
 See [`Validation/RESULTS.md`](Validation/RESULTS.md) for the validated outcome and interpretation.
 
