@@ -50,7 +50,7 @@ If Auto Exposure is requested but those requirements are unavailable, LightPLU f
 ## Light setup
 
 1. Add `LightPLU` to a Unity `Light`.
-2. Enter the physical intensity and unit.
+2. Enter the physical intensity and unit, or use the standard-range presets/slider in the custom Inspector.
 3. Keep `Reference EV100` at `15` unless the whole lighting/exposure setup intentionally uses another reference.
 4. LightPLU converts the authored value to Unity's native light unit using `LightUnitUtils` and writes a pre-exposed value to `Light.intensity`.
 
@@ -59,6 +59,28 @@ Examples:
 - Directional: `100000 Lux`
 - Point: `1000 Lumen`
 - Spot: `1000 Lumen` (Spot solid angle is handled by Unity's conversion when the Spot reflector is enabled)
+
+### Physical light Inspector
+
+The LightPLU Inspector keeps exact numeric entry, but also provides the preset-oriented workflow from the original LightPLU.
+
+Directional lights use Lux-based ranges:
+
+- `Moon`: 0-1 lux, preset 0.5 lux
+- `Low Sun`: 1-10000 lux, preset 5000 lux
+- `Cloudy`: 10000-80000 lux, preset 20000 lux
+- `High Sun`: 80000-130000 lux, preset 100000 lux
+
+Lumen-capable lights use:
+
+- `Candle`: 0-15 lm, preset 12.5 lm
+- `Decorative`: 15-300 lm, preset 100 lm
+- `Interior`: 300-3000 lm, preset 1000 lm
+- `Exterior`: 3000-40000 lm, preset 10000 lm
+
+The slider uses a piecewise range so moonlight, indoor lights, and sunlight remain practical on the same control. Changing the authored unit (for example Lumen to Candela) preserves the physical light output by converting the value through `LightUnitUtils`; the presets continue to operate in their physical Lux/Lumen basis.
+
+The `Calculated` section shows the native physical value and the final pre-exposed `URP Intensity` written to Unity's `Light.intensity`.
 
 ## Physical Exposure setup
 
@@ -72,7 +94,7 @@ Keep its injection point at:
 
 `Before Rendering Post Processing`
 
-The feature uses `Shaders/PhysicalExposure.shader`. It normally resolves this shader automatically. The shader can also be assigned explicitly in the Renderer Feature inspector.
+The feature uses `Resources/LightPLUPhysicalExposure.shader`. It normally resolves this shader automatically. The shader can also be assigned explicitly in the Renderer Feature inspector.
 
 The lightweight Auto Exposure meter is loaded automatically from:
 
@@ -197,7 +219,7 @@ The current harness checks:
 
 The validation run used during the Unity 6 migration passed all numeric tests after the validation shaders were updated to the current URP cluster-light-loop API.
 
-The production Renderer Feature and new Auto Exposure meter should be integration-checked in the target project after adding the Renderer Feature and Volume override.
+The production Renderer Feature and Auto Exposure meter were subsequently confirmed working in the target Unity project.
 
 See [`Validation/RESULTS.md`](Validation/RESULTS.md) for the validated outcome and interpretation.
 
