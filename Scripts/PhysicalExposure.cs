@@ -67,4 +67,32 @@ public static class PhysicalExposure
     {
         return Mathf.Pow(2.0f, -cameraEV100 + exposureCompensationStops);
     }
+
+    /// <summary>
+    /// Converts log2 luminance measured from the pre-exposed scene color into
+    /// a physical camera EV100 which maps that luminance to the requested middle gray.
+    ///
+    /// The measured scene has already been multiplied by 2^-ReferenceEV100, so
+    /// ReferenceEV100 is added back before solving B = L * 2^-EV for EV.
+    /// </summary>
+    public static float CalculateAutoExposureEV100FromPreExposedLogLuminance(
+        float preExposedLog2Luminance,
+        float referenceEV100,
+        float middleGray,
+        float minEV100,
+        float maxEV100)
+    {
+        middleGray = Mathf.Max(middleGray, 0.000001f);
+
+        float physicalLog2Luminance =
+            preExposedLog2Luminance + referenceEV100;
+
+        float targetEV100 =
+            physicalLog2Luminance - Mathf.Log(middleGray, 2.0f);
+
+        if (minEV100 > maxEV100)
+            (minEV100, maxEV100) = (maxEV100, minEV100);
+
+        return Mathf.Clamp(targetEV100, minEV100, maxEV100);
+    }
 }
