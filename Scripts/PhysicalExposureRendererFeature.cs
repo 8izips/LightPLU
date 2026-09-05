@@ -53,7 +53,7 @@ public sealed class PhysicalExposureRendererFeature : ScriptableRendererFeature
         if (_pass == null || _material == null)
             return;
 
-        ref CameraData cameraData = ref renderingData.cameraData;
+        CameraData cameraData = renderingData.cameraData;
 
         // Apply once, to the camera that resolves the final stack target.
         if (!cameraData.resolveFinalTarget)
