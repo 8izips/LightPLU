@@ -1,0 +1,46 @@
+#pragma kernel MeterLogLuminance
+
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+
+Texture2D<float4> _SourceTexture;
+SamplerState sampler_LinearClamp;
+RWStructuredBuffer<float> _Result;
+
+groupshared float _LogLuminance[256];
+
+[numthreads(256, 1, 1)]
+void MeterLogLuminance(uint3 groupThreadId : SV_GroupThreadID)
+{
+    uint index = groupThreadId.x;
+
+    // Uniform 16 x 16 screen-space meter. Sampling log luminance makes the
+    // result much less sensitive to isolated highlights than a linear average.
+    uint x = index & 15u;
+    uint y = index >> 4u;
+
+    float2 uv = (float2(x, y) + 0.5) / 16.0;
+    float3 color = _SourceTexture.SampleLevel(
+        sampler_LinearClamp,
+        uv,
+        0.0).rgb;
+
+    // Rec.709 luminance coefficients in scene-linear RGB.
+    float luminance = max(
+        dot(color, float3(0.2126, 0.7152, 0.0722)),
+        1e-6);
+
+    _LogLuminance[index] = log2(luminance);
+    GroupMemoryBarrierWithGroupSync();
+
+    [unroll]
+    for (uint stride = 128u; stride > 0u; stride >>= 1u)
+    {
+        if (index < stride)
+            _LogLuminance[index] += _LogLuminance[index + stride];
+
+        GroupMemoryBarrierWithGroupSync();
+    }
+
+    if (index == 0u)
+        _Result[0] = _LogLuminance[0] / 256.0;
+}
