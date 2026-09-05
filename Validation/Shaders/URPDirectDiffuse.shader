@@ -27,38 +27,69 @@ Shader "LightPLUValidation/URPDirectDiffuse"
                 Varyings o;
                 VertexPositionInputs p = GetVertexPositionInputs(i.positionOS.xyz);
                 VertexNormalInputs n = GetVertexNormalInputs(i.normalOS);
-                o.positionCS = p.positionCS; o.positionWS = p.positionWS; o.normalWS = n.normalWS;
+                o.positionCS = p.positionCS;
+                o.positionWS = p.positionWS;
+                o.normalWS = n.normalWS;
                 return o;
             }
-            half3 Eval(BRDFData brdf, InputData d, Light l)
+            half3 Eval(BRDFData brdf, InputData inputData, Light light)
             {
                 BRDFData noCoat = (BRDFData)0;
-                return LightingPhysicallyBased(brdf, noCoat, l, d.normalWS, d.viewDirectionWS, 0.0h, true);
+                return LightingPhysicallyBased(
+                    brdf,
+                    noCoat,
+                    light,
+                    inputData.normalWS,
+                    inputData.viewDirectionWS,
+                    0.0h,
+                    true);
             }
             half4 Frag(Varyings i) : SV_Target
             {
-                InputData d = (InputData)0;
-                d.positionWS = i.positionWS;
-                d.normalWS = normalize(i.normalWS);
-                d.viewDirectionWS = GetWorldSpaceNormalizeViewDir(i.positionWS);
-                d.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(i.positionCS);
+                // Keep this exact variable name. URP's LIGHT_LOOP_BEGIN macro
+                // references `inputData` internally in Forward+ variants.
+                InputData inputData = (InputData)0;
+                inputData.positionWS = i.positionWS;
+                inputData.normalWS = normalize(i.normalWS);
+                inputData.viewDirectionWS = GetWorldSpaceNormalizeViewDir(i.positionWS);
+                inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(i.positionCS);
+
                 half alpha = 1.0h;
                 BRDFData brdf;
-                InitializeBRDFData(half3(_Albedo,_Albedo,_Albedo), 0.0h, half3(0,0,0), 0.0h, alpha, brdf);
-                half3 c = Eval(brdf, d, GetMainLight());
+                InitializeBRDFData(
+                    half3(_Albedo, _Albedo, _Albedo),
+                    0.0h,
+                    half3(0, 0, 0),
+                    0.0h,
+                    alpha,
+                    brdf);
+
+                half3 c = Eval(brdf, inputData, GetMainLight());
+
                 #if USE_FORWARD_PLUS
-                UNITY_LOOP for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS); lightIndex++)
+                UNITY_LOOP for (
+                    uint lightIndex = 0;
+                    lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS);
+                    lightIndex++)
                 {
-                    Light l = GetAdditionalLight(lightIndex, d.positionWS, half4(1,1,1,1));
-                    c += Eval(brdf, d, l);
+                    Light light = GetAdditionalLight(
+                        lightIndex,
+                        inputData.positionWS,
+                        half4(1, 1, 1, 1));
+                    c += Eval(brdf, inputData, light);
                 }
                 #endif
-                uint count = GetAdditionalLightsCount();
-                LIGHT_LOOP_BEGIN(count)
-                    Light l = GetAdditionalLight(lightIndex, d.positionWS, half4(1,1,1,1));
-                    c += Eval(brdf, d, l);
+
+                uint pixelLightCount = GetAdditionalLightsCount();
+                LIGHT_LOOP_BEGIN(pixelLightCount)
+                    Light light = GetAdditionalLight(
+                        lightIndex,
+                        inputData.positionWS,
+                        half4(1, 1, 1, 1));
+                    c += Eval(brdf, inputData, light);
                 LIGHT_LOOP_END
-                return half4(c,1);
+
+                return half4(c, 1);
             }
             ENDHLSL
         }
