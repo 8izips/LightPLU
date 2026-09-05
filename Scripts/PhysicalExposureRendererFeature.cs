@@ -20,10 +20,11 @@ using UnityEngine.Rendering.Universal;
 public sealed class PhysicalExposureRendererFeature : ScriptableRendererFeature
 {
     private const string ShaderName = "Hidden/LightPLU/PhysicalExposure";
+    private const string ExposureShaderResourceName = "LightPLUPhysicalExposure";
     private const string AutoExposureResourceName = "LightPLUPhysicalExposureAuto";
 
     [SerializeField]
-    [Tooltip("Full-screen shader used to multiply scene-linear color by the physical exposure multiplier.")]
+    [Tooltip("Full-screen shader used to multiply scene-linear color by the physical exposure multiplier. If empty, LightPLU loads it from Resources automatically.")]
     private Shader exposureShader;
 
     [SerializeField]
@@ -47,7 +48,12 @@ public sealed class PhysicalExposureRendererFeature : ScriptableRendererFeature
     public override void Create()
     {
         if (exposureShader == null)
-            exposureShader = Shader.Find(ShaderName);
+        {
+            exposureShader = Resources.Load<Shader>(ExposureShaderResourceName);
+
+            if (exposureShader == null)
+                exposureShader = Shader.Find(ShaderName);
+        }
 
         if (autoExposureCompute == null)
         {
@@ -241,7 +247,6 @@ public sealed class PhysicalExposureRendererFeature : ScriptableRendererFeature
         public void SetInactive()
         {
             _activeLastFrame = false;
-            ReadbackPending = false;
         }
 
         private static void NormalizeRange(ref float minEV100, ref float maxEV100)
