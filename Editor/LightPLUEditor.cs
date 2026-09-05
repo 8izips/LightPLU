@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -333,16 +334,24 @@ public sealed class LightPLUEditor : Editor
 
     private static Texture2D LoadPresetIcon(string iconName)
     {
-        if (IconCache.TryGetValue(iconName, out Texture2D cached))
+        string cacheKey = (EditorGUIUtility.isProSkin ? "dark:" : "light:") + iconName;
+        if (IconCache.TryGetValue(cacheKey, out Texture2D cached))
             return cached;
 
-        Texture2D icon = AssetDatabase.LoadAssetAtPath<Texture2D>(
-            LightUnitIconPath + iconName + ".png");
+        // CoreEditorUtils follows Unity's own editor skin convention:
+        // Professional/Dark skin loads the d_ icon variant, while Light skin
+        // loads the normal icon. The LightUnitIcons package contains both.
+        Texture2D icon = CoreEditorUtils.LoadIcon(LightUnitIconPath, iconName);
 
         if (icon == null)
-            icon = EditorGUIUtility.IconContent("Light Icon").image as Texture2D;
+        {
+            string fallback = EditorGUIUtility.isProSkin
+                ? "d_Light Icon"
+                : "Light Icon";
+            icon = EditorGUIUtility.IconContent(fallback).image as Texture2D;
+        }
 
-        IconCache[iconName] = icon;
+        IconCache[cacheKey] = icon;
         return icon;
     }
 
