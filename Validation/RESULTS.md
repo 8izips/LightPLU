@@ -46,7 +46,7 @@ The repository now includes:
 
 - `PhysicalExposureVolume`: manual EV100 / physical camera controls and a Basic Auto Exposure toggle.
 - `PhysicalExposureRendererFeature`: a Unity 6 Render Graph pass injected at `BeforeRenderingPostProcessing`.
-- `Shaders/PhysicalExposure.shader`: multiplies scene-linear camera color by the relative physical exposure multiplier.
+- `Resources/LightPLUPhysicalExposure.shader`: multiplies scene-linear camera color by the relative physical exposure multiplier.
 - `Resources/LightPLUPhysicalExposureAuto.compute`: 16 x 16 log-luminance metering for Basic Auto Exposure.
 
 The production pass uses the same validated equation:
@@ -72,17 +72,18 @@ targetEV100 = physicalLog2Luminance - log2(MiddleGray)
 
 The target is clamped by Min/Max EV100 and adapted in EV space using Speed Up / Speed Down in stops per second.
 
-## Validation status of the production features
+## Production integration result
 
-The PLU conversion, exposure math, and reference pre-exposure formulation are covered by the play-mode validation harness and passed in the reported Unity 6 URP run.
+The production `Physical Exposure Renderer Feature` and Basic Auto Exposure path were subsequently checked in the target Unity 6 URP project and reported to operate correctly in Play mode.
 
-The production Renderer Feature and the newly added Basic Auto Exposure metering path are **not yet marked PASS**. They require an in-project integration check after:
+This confirms the intended integration path at the current project configuration:
 
-1. `Physical Exposure Renderer Feature` is added to the active Universal Renderer Data.
-2. `LightPLU > Physical Exposure` is added to a Volume Profile.
-3. Manual EV changes and Auto Exposure adaptation are observed in Play mode.
+1. `Physical Exposure Renderer Feature` is present on the active Universal Renderer Data.
+2. `LightPLU > Physical Exposure` is active in a Volume Profile.
+3. Manual exposure responds correctly in Play mode.
+4. Basic Auto Exposure adapts correctly in Play mode.
 
-Do not treat the Auto Exposure path as validated until that check is completed.
+The automated harness still remains the numeric authority for PLU transport and exposure math; the production-feature result above is an integration/behavior confirmation rather than a pixel-exact automated test.
 
 ## Important scope
 
