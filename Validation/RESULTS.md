@@ -44,9 +44,10 @@ For the tested Unity 6 URP configuration:
 
 The repository now includes:
 
-- `PhysicalExposureVolume`: EV100 or Aperture/Shutter/ISO camera controls.
+- `PhysicalExposureVolume`: manual EV100 / physical camera controls and a Basic Auto Exposure toggle.
 - `PhysicalExposureRendererFeature`: a Unity 6 Render Graph pass injected at `BeforeRenderingPostProcessing`.
 - `Shaders/PhysicalExposure.shader`: multiplies scene-linear camera color by the relative physical exposure multiplier.
+- `Resources/LightPLUPhysicalExposureAuto.compute`: 16 x 16 log-luminance metering for Basic Auto Exposure.
 
 The production pass uses the same validated equation:
 
@@ -61,7 +62,27 @@ Combined:
     2^(-CameraEV100 + Compensation)
 ```
 
-The numeric math and pre-exposure formulation are covered by the validation harness. The Renderer Feature itself still needs an in-project integration check after it is added to the active Universal Renderer Data and a `LightPLU/Physical Exposure` Volume override is enabled.
+Basic Auto Exposure meters the scene before the Physical Exposure pass. Because the measured scene is already reference-pre-exposed, the auto target is solved as:
+
+```text
+physicalLog2Luminance = measuredPreExposedLog2Luminance + ReferenceEV100
+
+targetEV100 = physicalLog2Luminance - log2(MiddleGray)
+```
+
+The target is clamped by Min/Max EV100 and adapted in EV space using Speed Up / Speed Down in stops per second.
+
+## Validation status of the production features
+
+The PLU conversion, exposure math, and reference pre-exposure formulation are covered by the play-mode validation harness and passed in the reported Unity 6 URP run.
+
+The production Renderer Feature and the newly added Basic Auto Exposure metering path are **not yet marked PASS**. They require an in-project integration check after:
+
+1. `Physical Exposure Renderer Feature` is added to the active Universal Renderer Data.
+2. `LightPLU > Physical Exposure` is added to a Volume Profile.
+3. Manual EV changes and Auto Exposure adaptation are observed in Play mode.
+
+Do not treat the Auto Exposure path as validated until that check is completed.
 
 ## Important scope
 
