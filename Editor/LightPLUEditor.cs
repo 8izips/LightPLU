@@ -7,30 +7,41 @@ using UnityEngine.Rendering;
 [CustomEditor(typeof(LightPLU))]
 public sealed class LightPLUEditor : Editor
 {
+    private const string LightUnitIconPath =
+        "Packages/com.unity.render-pipelines.core/Editor/Lighting/Icons/LightUnitIcons/";
+
     private readonly struct PresetRange
     {
         public readonly string Name;
+        public readonly string IconName;
         public readonly float Min;
         public readonly float Max;
         public readonly float Preset;
 
-        public PresetRange(string name, float min, float max, float preset)
+        public PresetRange(
+            string name,
+            string iconName,
+            float min,
+            float max,
+            float preset)
         {
             Name = name;
+            IconName = iconName;
             Min = min;
             Max = max;
             Preset = preset;
         }
     }
 
-    // These ranges follow Unity 6 Core's physical-light authoring categories,
-    // while this inspector remains independent from Unity's internal editor API.
+    // These ranges and icon concepts follow Unity 6 Core's physical-light
+    // authoring categories, while this inspector stays independent from
+    // Unity's internal LightIntensitySlider editor API.
     private static readonly PresetRange[] LuxRanges =
     {
-        new PresetRange("Moon", 0.0f, 1.0f, 0.5f),
-        new PresetRange("Low Sun", 1.0f, 10000.0f, 5000.0f),
-        new PresetRange("Cloudy", 10000.0f, 80000.0f, 20000.0f),
-        new PresetRange("High Sun", 80000.0f, 130000.0f, 100000.0f),
+        new PresetRange("Moon", "Moonlight", 0.0f, 1.0f, 0.5f),
+        new PresetRange("Low Sun", "SunriseSunset", 1.0f, 10000.0f, 5000.0f),
+        new PresetRange("Cloudy", "Overcast", 10000.0f, 80000.0f, 20000.0f),
+        new PresetRange("High Sun", "BrightSky", 80000.0f, 130000.0f, 100000.0f),
     };
 
     private static readonly float[] LuxDistribution =
@@ -40,16 +51,18 @@ public sealed class LightPLUEditor : Editor
 
     private static readonly PresetRange[] LumenRanges =
     {
-        new PresetRange("Candle", 0.0f, 15.0f, 12.5f),
-        new PresetRange("Decorative", 15.0f, 300.0f, 100.0f),
-        new PresetRange("Interior", 300.0f, 3000.0f, 1000.0f),
-        new PresetRange("Exterior", 3000.0f, 40000.0f, 10000.0f),
+        new PresetRange("Candle", "Candlelight", 0.0f, 15.0f, 12.5f),
+        new PresetRange("Decorative", "DecorativeLight", 15.0f, 300.0f, 100.0f),
+        new PresetRange("Interior", "InteriorLight", 300.0f, 3000.0f, 1000.0f),
+        new PresetRange("Exterior", "ExteriorLight", 3000.0f, 40000.0f, 10000.0f),
     };
 
     private static readonly float[] LumenDistribution =
     {
         0.0f, 0.25f, 0.5f, 0.75f, 1.0f
     };
+
+    private static readonly Dictionary<string, Texture2D> IconCache = new();
 
     private SerializedProperty _targetLight;
     private SerializedProperty _physicalUnit;
@@ -232,13 +245,16 @@ public sealed class LightPLUEditor : Editor
         {
             bool active = i == activeRange;
             GUIStyle style = GetPresetButtonStyle(i, ranges.Length);
+            Texture2D icon = LoadPresetIcon(ranges[i].IconName);
 
             bool pressed = GUILayout.Toggle(
                 active,
                 new GUIContent(
-                    ranges[i].Name,
+                    icon,
                     $"{ranges[i].Name}: {FormatIntensity(ranges[i].Preset)} {sliderUnit}"),
-                style);
+                style,
+                GUILayout.Height(32.0f),
+                GUILayout.MinWidth(32.0f));
 
             if (pressed && !active)
             {
@@ -313,6 +329,21 @@ public sealed class LightPLUEditor : Editor
         {
             // Keep the current authored value if Unity rejects the conversion.
         }
+    }
+
+    private static Texture2D LoadPresetIcon(string iconName)
+    {
+        if (IconCache.TryGetValue(iconName, out Texture2D cached))
+            return cached;
+
+        Texture2D icon = AssetDatabase.LoadAssetAtPath<Texture2D>(
+            LightUnitIconPath + iconName + ".png");
+
+        if (icon == null)
+            icon = EditorGUIUtility.IconContent("Light Icon").image as Texture2D;
+
+        IconCache[iconName] = icon;
+        return icon;
     }
 
     private static float IntensityToSlider(
